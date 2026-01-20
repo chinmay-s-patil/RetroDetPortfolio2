@@ -1,39 +1,51 @@
 'use client'
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import projectsData from './projectsData';
+import React, { useState, useCallback, lazy, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
+import projectsData from './projectsData'
 
-export default function DetectiveProjects() {
-  const [openDrawer, setOpenDrawer] = useState(null);
-  const router = useRouter();
+// Lazy load the project folder component
+const ProjectFolder = lazy(() => import('./ProjectFolder'))
 
-  const handleDrawerClick = (drawerId) => {
-    setOpenDrawer(openDrawer === drawerId ? null : drawerId);
-  };
+export default function ProjectsPage() {
+  const [openDrawer, setOpenDrawer] = useState(null)
+  const [selectedProject, setSelectedProject] = useState(null)
+  const router = useRouter()
+
+  const handleDrawerClick = useCallback((drawerId) => {
+    setOpenDrawer(prev => prev === drawerId ? null : drawerId)
+  }, [])
+
+  const handleProjectClick = useCallback((project) => {
+    setSelectedProject(project)
+  }, [])
+
+  const handleCloseProject = useCallback(() => {
+    setSelectedProject(null)
+  }, [])
 
   return (
     <div style={{
       width: '100vw',
-      height: '100vh',
+      minHeight: '100vh',
       background: 'linear-gradient(135deg, #1a1410 0%, #0f0d0a 100%)',
       overflow: 'auto',
       position: 'relative',
       fontFamily: "'Special Elite', monospace"
     }}>
-      <style dangerouslySetInnerHTML={{__html: `
+      <style jsx>{`
         @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
         
         @keyframes drawerOpen {
           from { max-height: 0; opacity: 0; }
-          to { max-height: 600px; opacity: 1; }
+          to { max-height: 2000px; opacity: 1; }
         }
         
         .drawer-content {
           animation: drawerOpen 0.4s ease-out;
           overflow: hidden;
         }
-      `}} />
+      `}</style>
 
       {/* Back Button */}
       <button
@@ -52,14 +64,6 @@ export default function DetectiveProjects() {
           zIndex: 1000,
           transition: 'all 0.3s ease',
           boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.background = 'rgba(196, 165, 116, 0.3)';
-          e.target.style.transform = 'translateX(-4px)';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = 'rgba(196, 165, 116, 0.2)';
-          e.target.style.transform = 'translateX(0)';
         }}
       >
         ← BACK TO HQ
@@ -104,7 +108,7 @@ export default function DetectiveProjects() {
           </p>
         </div>
 
-        {/* Filing Cabinet Container */}
+        {/* Filing Cabinet */}
         <div style={{
           width: '100%',
           maxWidth: '900px',
@@ -127,37 +131,12 @@ export default function DetectiveProjects() {
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
                   boxShadow: openDrawer === drawer.id 
-                    ? '0 8px 24px rgba(0,0,0,0.7), inset 0 2px 0 rgba(255,255,255,0.15)'
-                    : '0 6px 16px rgba(0,0,0,0.6), inset 0 2px 0 rgba(255,255,255,0.1)',
+                    ? '0 8px 24px rgba(0,0,0,0.7)'
+                    : '0 6px 16px rgba(0,0,0,0.6)',
                   transform: openDrawer === drawer.id ? 'translateY(-2px)' : 'translateY(0)',
                   overflow: 'hidden'
                 }}
-                onMouseEnter={(e) => {
-                  if (openDrawer !== drawer.id) {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.65), inset 0 2px 0 rgba(255,255,255,0.12)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (openDrawer !== drawer.id) {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.6), inset 0 2px 0 rgba(255,255,255,0.1)';
-                  }
-                }}
               >
-                {/* Metal texture overlay */}
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: `
-                    linear-gradient(45deg, transparent 48%, rgba(0,0,0,0.08) 49%, rgba(0,0,0,0.08) 51%, transparent 52%),
-                    linear-gradient(-45deg, transparent 48%, rgba(0,0,0,0.04) 49%, rgba(0,0,0,0.04) 51%, transparent 52%)
-                  `,
-                  backgroundSize: '25px 25px',
-                  opacity: 0.4,
-                  pointerEvents: 'none'
-                }} />
-
                 {/* Handle */}
                 <div style={{
                   position: 'absolute',
@@ -169,11 +148,7 @@ export default function DetectiveProjects() {
                   background: 'linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 50%, #2a2a2a 100%)',
                   borderRadius: '6px',
                   border: '3px solid rgba(0,0,0,0.6)',
-                  boxShadow: `
-                    inset 0 2px 4px rgba(255,255,255,0.1),
-                    inset 0 -2px 4px rgba(0,0,0,0.5),
-                    0 4px 12px rgba(0,0,0,0.6)
-                  `,
+                  boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.1)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -182,8 +157,7 @@ export default function DetectiveProjects() {
                     width: '70px',
                     height: '6px',
                     background: 'linear-gradient(90deg, #3a3a3a, #1a1a1a, #3a3a3a)',
-                    borderRadius: '3px',
-                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.5)'
+                    borderRadius: '3px'
                   }} />
                 </div>
 
@@ -197,7 +171,6 @@ export default function DetectiveProjects() {
                   padding: '6px 20px',
                   borderRadius: '4px',
                   border: '2px solid rgba(0,0,0,0.3)',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
                   fontSize: '0.9rem',
                   fontWeight: '700',
                   color: '#1a1410',
@@ -216,27 +189,13 @@ export default function DetectiveProjects() {
                   borderRadius: '4px',
                   fontSize: '0.7rem',
                   color: '#c4a574',
-                  fontWeight: '700',
-                  border: '1px solid rgba(196, 165, 116, 0.3)'
+                  fontWeight: '700'
                 }}>
                   {drawer.folders.length} FILES
                 </div>
-
-                {/* Open indicator */}
-                {openDrawer === drawer.id && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '-2px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    fontSize: '1.2rem'
-                  }}>
-                    ▼
-                  </div>
-                )}
               </div>
 
-              {/* Drawer Contents - Folders */}
+              {/* Drawer Contents */}
               {openDrawer === drawer.id && (
                 <div className="drawer-content" style={{
                   marginTop: '1rem',
@@ -244,8 +203,7 @@ export default function DetectiveProjects() {
                   background: 'rgba(61, 40, 23, 0.3)',
                   border: '3px solid #3d2817',
                   borderRadius: '8px',
-                  backdropFilter: 'blur(10px)',
-                  boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.5)'
+                  backdropFilter: 'blur(10px)'
                 }}>
                   <div style={{
                     display: 'grid',
@@ -255,16 +213,17 @@ export default function DetectiveProjects() {
                     {drawer.folders.map((folder) => (
                       <div
                         key={folder.id}
+                        onClick={() => handleProjectClick(folder)}
                         style={{
                           position: 'relative',
                           cursor: 'pointer',
                           transition: 'transform 0.2s ease'
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-8px) rotate(-2deg)';
+                          e.currentTarget.style.transform = 'translateY(-8px) rotate(-2deg)'
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0) rotate(0deg)';
+                          e.currentTarget.style.transform = 'translateY(0) rotate(0deg)'
                         }}
                       >
                         {/* Folder Tab */}
@@ -278,7 +237,6 @@ export default function DetectiveProjects() {
                           borderRadius: '6px 6px 0 0',
                           border: '2px solid rgba(0,0,0,0.3)',
                           borderBottom: 'none',
-                          boxShadow: '0 -2px 4px rgba(0,0,0,0.3)',
                           zIndex: 2,
                           display: 'flex',
                           alignItems: 'center',
@@ -289,7 +247,11 @@ export default function DetectiveProjects() {
                             fontWeight: '700',
                             color: '#f6efe2',
                             letterSpacing: '0.05em',
-                            textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                            textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            padding: '0 0.25rem'
                           }}>
                             {folder.shortTitle || folder.title.substring(0, 8)}
                           </div>
@@ -307,17 +269,6 @@ export default function DetectiveProjects() {
                           overflow: 'hidden',
                           zIndex: 1
                         }}>
-                          {/* Paper texture */}
-                          <div style={{
-                            position: 'absolute',
-                            inset: 0,
-                            backgroundImage: `
-                              repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px),
-                              repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)
-                            `,
-                            pointerEvents: 'none'
-                          }} />
-
                           {/* Classified stamp */}
                           <div style={{
                             position: 'absolute',
@@ -347,25 +298,6 @@ export default function DetectiveProjects() {
                           }}>
                             #{folder.id.substring(0, 6).toUpperCase()}
                           </div>
-
-                          {/* Paper lines */}
-                          <div style={{
-                            position: 'absolute',
-                            top: '45px',
-                            left: '12px',
-                            right: '12px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '8px'
-                          }}>
-                            {[...Array(5)].map((_, i) => (
-                              <div key={i} style={{
-                                width: '100%',
-                                height: '1px',
-                                background: 'rgba(0,0,0,0.15)'
-                              }} />
-                            ))}
-                          </div>
                         </div>
 
                         {/* Hover label */}
@@ -376,7 +308,7 @@ export default function DetectiveProjects() {
                           textAlign: 'center',
                           fontWeight: '600'
                         }}>
-                          {folder.title}
+                          {folder.title.length > 30 ? folder.title.substring(0, 30) + '...' : folder.title}
                         </div>
                       </div>
                     ))}
@@ -387,6 +319,13 @@ export default function DetectiveProjects() {
           ))}
         </div>
       </div>
+
+      {/* Project Folder Modal - Lazy Loaded */}
+      {selectedProject && (
+        <Suspense fallback={<div>Loading...</div>}>
+          <ProjectFolder project={selectedProject} onClose={handleCloseProject} />
+        </Suspense>
+      )}
     </div>
-  );
+  )
 }

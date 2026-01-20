@@ -1,67 +1,35 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import dynamic from 'next/dynamic'
 
-// Lazy load the locker data
-const lockers = [
-  {
-    id: 'masters',
-    locked: false,
-    label: 'M.Sc.',
-    number: '042',
-    color: '#2a5d84',
-    degree: 'Aerospace Engineering',
-    title: 'Master of Science',
-    institution: 'Technical University of Munich',
-    shortName: 'TUM',
-    period: 'Oct 2025 — Present',
-    location: 'Munich, Germany',
-    description: 'Pursuing advanced studies in aerospace engineering with specialization in computational fluid dynamics and aerodynamics.',
-    skills: ['Advanced CFD', 'Turbulence Modeling', 'HPC', 'Numerical Methods', 'Aerodynamics', 'Research'],
-    imageCount: 7,
-    imageBase: '/Education/TUM/TUM',
-    gpa: '—',
-    focus: 'CFD & Aeroacoustics'
-  },
-  {
-    id: 'bachelors',
-    locked: false,
-    label: 'B.Tech',
-    number: '021',
-    color: '#5d4a2a',
-    degree: 'Mechanical Engineering',
-    title: 'Bachelor of Technology',
-    institution: 'VIT Chennai',
-    shortName: 'VITC',
-    period: 'Jun 2021 — May 2025',
-    location: 'Chennai, India',
-    description: 'Completed comprehensive undergraduate program in mechanical engineering.',
-    skills: ['Fluid Mechanics', 'CFD', 'Heat Transfer', 'Thermodynamics', 'Engineering Analysis', 'Mechanical Design'],
-    imageCount: 8,
-    imageBase: '/Education/VITC/VITC',
-    gpa: 'Honors',
-    focus: 'Thermal & Fluid Systems'
-  },
-  {
-    id: 'phd',
-    locked: true,
-    label: 'Ph.D.',
-    number: '???',
-    color: '#4a2a5d',
-    message: "We ain't there yet, buddy.",
-    subtitle: "A little ambition goes a long way — plans TBD."
-  }
-]
-
-// Lazy loading image component
-const LazyImage = ({ src, alt, style, onError }) => {
+// Lazy image component with intersection observer
+const LazyImage = ({ src, alt, className, style }) => {
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
+  const [inView, setInView] = useState(false)
+  const imgRef = React.useRef(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '50px' }
+    )
+
+    if (imgRef.current) {
+      observer.observe(imgRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [])
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
+    <div ref={imgRef} style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
       {!loaded && !error && (
         <div style={{
           position: 'absolute',
@@ -75,22 +43,22 @@ const LazyImage = ({ src, alt, style, onError }) => {
           Loading...
         </div>
       )}
-      <img
-        src={src}
-        alt={alt}
-        loading="lazy"
-        style={{
-          ...style,
-          opacity: loaded ? 1 : 0,
-          transition: 'opacity 0.3s ease',
-          display: error ? 'none' : 'block'
-        }}
-        onLoad={() => setLoaded(true)}
-        onError={() => {
-          setError(true)
-          if (onError) onError()
-        }}
-      />
+      {inView && (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          className={className}
+          style={{
+            ...style,
+            opacity: loaded ? 1 : 0,
+            transition: 'opacity 0.3s ease',
+            display: error ? 'none' : 'block'
+          }}
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+        />
+      )}
     </div>
   )
 }
@@ -98,10 +66,62 @@ const LazyImage = ({ src, alt, style, onError }) => {
 export default function EducationPage() {
   const [openLocker, setOpenLocker] = useState(null)
   const [currentImageIndex, setCurrentImageIndex] = useState({})
-  const [loadedImages, setLoadedImages] = useState({})
   const router = useRouter()
 
-  // Auto-advance slideshow
+  // Memoize lockers data
+  const lockers = useMemo(() => [
+    {
+      id: 'masters',
+      locked: false,
+      label: 'M.Sc.',
+      number: '042',
+      color: '#2a5d84',
+      degree: 'Aerospace Engineering',
+      title: 'Master of Science',
+      institution: 'Technical University of Munich',
+      shortName: 'TUM',
+      period: 'Oct 2025 — Present',
+      location: 'Munich, Germany',
+      description: 'Pursuing advanced studies in aerospace engineering with specialization in computational fluid dynamics and aerodynamics.',
+      skills: ['Advanced CFD', 'Turbulence Modeling', 'HPC', 'Numerical Methods', 'Aerodynamics', 'Research'],
+      imageCount: 7,
+      imageBase: '/Education/TUM/TUM',
+      imageExt: '.jpg',
+      gpa: '—',
+      focus: 'CFD & Aeroacoustics'
+    },
+    {
+      id: 'bachelors',
+      locked: false,
+      label: 'B.Tech',
+      number: '021',
+      color: '#5d4a2a',
+      degree: 'Mechanical Engineering',
+      title: 'Bachelor of Technology',
+      institution: 'VIT Chennai',
+      shortName: 'VITC',
+      period: 'Jun 2021 — May 2025',
+      location: 'Chennai, India',
+      description: 'Completed comprehensive undergraduate program in mechanical engineering.',
+      skills: ['Fluid Mechanics', 'CFD', 'Heat Transfer', 'Thermodynamics', 'Engineering Analysis', 'Mechanical Design'],
+      imageCount: 8,
+      imageBase: '/Education/VITC/VITC',
+      imageExts: ['.jpeg', '.JPG', '.jpg', '.jpg', '.jpg', '.jpg', '.jpg', '.jpg'],
+      gpa: 'Honors',
+      focus: 'Thermal & Fluid Systems'
+    },
+    {
+      id: 'phd',
+      locked: true,
+      label: 'Ph.D.',
+      number: '???',
+      color: '#4a2a5d',
+      message: "We ain't there yet, buddy.",
+      subtitle: "A little ambition goes a long way — plans TBD."
+    }
+  ], [])
+
+  // Auto-advance slideshow with cleanup
   useEffect(() => {
     if (!openLocker) return
     
@@ -116,40 +136,31 @@ export default function EducationPage() {
     }, 4000)
 
     return () => clearInterval(timer)
-  }, [openLocker])
+  }, [openLocker, lockers])
 
-  // Lazy load images when locker opens
-  useEffect(() => {
-    if (!openLocker) return
-    
-    const locker = lockers.find(l => l.id === openLocker)
-    if (!locker || !locker.imageCount || loadedImages[openLocker]) return
-
-    // Mark as loaded to prevent re-loading
-    setLoadedImages(prev => ({ ...prev, [openLocker]: true }))
-  }, [openLocker])
-
-  const handleLockerClick = (lockerId) => {
+  const handleLockerClick = useCallback((lockerId) => {
     const locker = lockers.find(l => l.id === lockerId)
     if (locker.locked) return
     
-    setOpenLocker(openLocker === lockerId ? null : lockerId)
+    setOpenLocker(prev => prev === lockerId ? null : lockerId)
     if (!currentImageIndex[lockerId]) {
       setCurrentImageIndex(prev => ({ ...prev, [lockerId]: 0 }))
     }
-  }
+  }, [lockers, currentImageIndex])
 
-  const getImagePath = (locker, index) => {
+  const getImagePath = useCallback((locker, index) => {
     if (locker.id === 'masters') {
-      return `${locker.imageBase} (${index + 1}).jpg`
+      return `${locker.imageBase} (${index + 1})${locker.imageExt}`
     } else if (locker.id === 'bachelors') {
-      const extensions = ['.jpeg', '.JPG', '.jpg', '.jpg', '.jpg', '.jpg', '.jpg', '.jpg']
-      return `${locker.imageBase} (${index + 1})${extensions[index]}`
+      return `${locker.imageBase} (${index + 1})${locker.imageExts[index]}`
     }
     return ''
-  }
+  }, [])
 
-  const currentLocker = lockers.find(l => l.id === openLocker)
+  const currentLocker = useMemo(() => 
+    lockers.find(l => l.id === openLocker),
+    [lockers, openLocker]
+  )
 
   return (
     <div style={{
@@ -160,27 +171,13 @@ export default function EducationPage() {
       position: 'relative',
       fontFamily: "'Special Elite', monospace"
     }}>
-      <style dangerouslySetInnerHTML={{__html: `
+      <style jsx>{`
         @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&display=swap');
-
-        @keyframes swingOpen {
-          0% { transform: perspective(1200px) rotateY(0deg); }
-          100% { transform: perspective(1200px) rotateY(-105deg); }
-        }
 
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes slideIn {
-          from { transform: translateX(-30px); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-
-        .locker-door.open {
-          animation: swingOpen 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
         .content-panel {
@@ -195,7 +192,7 @@ export default function EducationPage() {
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(196, 165, 116, 0.4);
         }
-      `}} />
+      `}</style>
 
       <button
         onClick={() => router.push('/hub')}
@@ -251,7 +248,9 @@ export default function EducationPage() {
             display: 'flex',
             gap: '3rem',
             alignItems: 'flex-end',
-            perspective: '1000px'
+            perspective: '1000px',
+            flexWrap: 'wrap',
+            justifyContent: 'center'
           }}>
             {lockers.map((locker) => (
               <div
@@ -271,25 +270,6 @@ export default function EducationPage() {
                   opacity: locker.locked ? 0.6 : 1
                 }}
               >
-                <div style={{
-                  position: 'absolute',
-                  top: '20px',
-                  left: '20px',
-                  right: '20px',
-                  height: '60px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px'
-                }}>
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} style={{
-                      width: '100%',
-                      height: '2px',
-                      background: 'rgba(0,0,0,0.4)'
-                    }} />
-                  ))}
-                </div>
-
                 <div style={{
                   position: 'absolute',
                   top: '100px',
@@ -347,7 +327,8 @@ export default function EducationPage() {
           alignItems: 'center',
           justifyContent: 'center',
           padding: '2rem',
-          position: 'relative'
+          position: 'relative',
+          overflowY: 'auto'
         }}>
           <button
             onClick={() => setOpenLocker(null)}
@@ -370,14 +351,15 @@ export default function EducationPage() {
           <div className="content-panel" style={{
             maxWidth: '1400px',
             width: '100%',
-            height: '85%',
+            height: 'auto',
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
             gap: '4rem',
-            alignItems: 'center'
+            alignItems: 'start',
+            marginTop: '4rem'
           }}>
-            {/* Left: Poster */}
-            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            {/* Poster */}
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div style={{
                 background: 'linear-gradient(135deg, #f6efe2 0%, #e8dcc8 100%)',
                 padding: '3rem',
@@ -392,15 +374,15 @@ export default function EducationPage() {
                   color: '#1a1a1a',
                   fontFamily: "'Crimson Text', serif"
                 }}>
-                  {currentLocker.title}
+                  {currentLocker?.title}
                 </h2>
 
-                <div style={{ fontSize: '1.5rem', color: currentLocker.color, fontWeight: '600', marginBottom: '1.5rem' }}>
-                  {currentLocker.degree}
+                <div style={{ fontSize: '1.5rem', color: currentLocker?.color, fontWeight: '600', marginBottom: '1.5rem' }}>
+                  {currentLocker?.degree}
                 </div>
 
                 <p style={{ fontSize: '1rem', lineHeight: '1.7', color: '#2a2a2a', marginBottom: '2rem' }}>
-                  {currentLocker.description}
+                  {currentLocker?.description}
                 </p>
 
                 <div>
@@ -408,10 +390,10 @@ export default function EducationPage() {
                     KEY COMPETENCIES
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {currentLocker.skills.map((skill, i) => (
+                    {currentLocker?.skills.map((skill, i) => (
                       <span key={i} className="skill-tag" style={{
                         padding: '0.5rem 1rem',
-                        background: currentLocker.color,
+                        background: currentLocker?.color,
                         color: '#f6efe2',
                         borderRadius: '6px',
                         fontSize: '0.85rem'
@@ -424,55 +406,57 @@ export default function EducationPage() {
               </div>
             </div>
 
-            {/* Right: Photo Wall - Lazy loaded */}
-            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-              <div style={{
-                flex: 1,
-                position: 'relative',
-                borderRadius: '12px',
-                overflow: 'hidden',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
-                border: '8px solid #3d2817'
-              }}>
-                {loadedImages[openLocker] && [...Array(currentLocker.imageCount)].map((_, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      opacity: idx === (currentImageIndex[openLocker] || 0) ? 1 : 0,
-                      transition: 'opacity 1s ease-in-out'
-                    }}
-                  >
-                    {/* Only load current and next image */}
-                    {(idx === (currentImageIndex[openLocker] || 0) || 
-                      idx === ((currentImageIndex[openLocker] || 0) + 1) % currentLocker.imageCount) && (
-                      <LazyImage
-                        src={getImagePath(currentLocker, idx)}
-                        alt={`${currentLocker.institution} ${idx + 1}`}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover'
-                        }}
-                      />
-                    )}
-                  </div>
-                ))}
-
+            {/* Photo Wall */}
+            {currentLocker?.imageCount && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                 <div style={{
-                  position: 'absolute',
-                  bottom: '1rem',
-                  right: '1rem',
-                  background: 'rgba(0,0,0,0.7)',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  color: '#f6efe2'
+                  minHeight: '400px',
+                  position: 'relative',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+                  border: '8px solid #3d2817'
                 }}>
-                  {(currentImageIndex[openLocker] || 0) + 1} / {currentLocker.imageCount}
+                  {[...Array(currentLocker.imageCount)].map((_, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        position: idx === (currentImageIndex[openLocker] || 0) ? 'relative' : 'absolute',
+                        inset: 0,
+                        opacity: idx === (currentImageIndex[openLocker] || 0) ? 1 : 0,
+                        transition: 'opacity 1s ease-in-out',
+                        pointerEvents: idx === (currentImageIndex[openLocker] || 0) ? 'auto' : 'none'
+                      }}
+                    >
+                      {idx === (currentImageIndex[openLocker] || 0) && (
+                        <LazyImage
+                          src={getImagePath(currentLocker, idx)}
+                          alt={`${currentLocker.institution} ${idx + 1}`}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            minHeight: '400px'
+                          }}
+                        />
+                      )}
+                    </div>
+                  ))}
+
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '1rem',
+                    right: '1rem',
+                    background: 'rgba(0,0,0,0.7)',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '6px',
+                    color: '#f6efe2'
+                  }}>
+                    {(currentImageIndex[openLocker] || 0) + 1} / {currentLocker.imageCount}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

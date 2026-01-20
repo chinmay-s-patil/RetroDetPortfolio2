@@ -1,13 +1,14 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function HubPage() {
   const [hoveredItem, setHoveredItem] = useState(null)
   const router = useRouter()
 
-  const hubItems = [
+  // Memoize hub items to prevent recreation on every render
+  const hubItems = useMemo(() => [
     { id: 'landing', label: 'Landing', theme: 'Map Spread on a Table', icon: '🗺️', path: '/' },
     { id: 'education', label: 'Education', theme: 'Lockers', icon: '🔒', path: '/education' },
     { id: 'timeline', label: 'Professional Timeline', theme: 'Diary', icon: '📔', path: '/timeline' },
@@ -17,16 +18,15 @@ export default function HubPage() {
     { id: 'visualization', label: 'Visualization', theme: 'Computer', icon: '💻', path: '/visualization' },
     { id: 'events', label: 'Events', theme: 'Photo Reels', icon: '🎞️', path: '/events' },
     { id: 'upcoming', label: 'Upcoming', theme: 'Robot?', icon: '🤖', path: '/upcoming' },
-  ]
+  ], [])
 
   const handleClick = (path) => {
-    console.log(`Navigating to: ${path}`)
     router.push(path)
   }
 
   return (
     <div className="hub-container">
-      <style dangerouslySetInnerHTML={{__html: `
+      <style jsx>{`
         @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
 
         .hub-container {
@@ -71,6 +71,7 @@ export default function HubPage() {
           position: relative;
           overflow: hidden;
           box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          will-change: transform;
         }
 
         .hub-card::before {
@@ -167,23 +168,7 @@ export default function HubPage() {
             font-size: 0.9rem;
           }
         }
-
-        /* Ambient background animation */
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
-
-        .hub-card:nth-child(1) { animation: float 6s ease-in-out infinite; }
-        .hub-card:nth-child(2) { animation: float 7s ease-in-out infinite 0.5s; }
-        .hub-card:nth-child(3) { animation: float 8s ease-in-out infinite 1s; }
-        .hub-card:nth-child(4) { animation: float 6.5s ease-in-out infinite 1.5s; }
-        .hub-card:nth-child(5) { animation: float 7.5s ease-in-out infinite 2s; }
-        .hub-card:nth-child(6) { animation: float 8.5s ease-in-out infinite 2.5s; }
-        .hub-card:nth-child(7) { animation: float 6s ease-in-out infinite 3s; }
-        .hub-card:nth-child(8) { animation: float 7s ease-in-out infinite 3.5s; }
-        .hub-card:nth-child(9) { animation: float 8s ease-in-out infinite 4s; }
-      `}} />
+      `}</style>
 
       <button className="hub-back" onClick={() => router.push('/')}>
         ← Back to Landing

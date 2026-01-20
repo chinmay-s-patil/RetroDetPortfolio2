@@ -1,6 +1,9 @@
 'use client';
 
+import { useRouter } from 'next/navigation'
+
 export default function WantedPosterLanding() {
+  const router = useRouter();
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-2 md:p-4">
       {/* Wanted Poster */}
@@ -143,10 +146,7 @@ export default function WantedPosterLanding() {
                 fontSize: 'clamp(0.75rem, 2vh, 1.25rem)',
                 padding: 'clamp(0.5rem, 1.5vh, 1rem) clamp(1rem, 3vw, 2rem)'
               }}
-              onClick={() => {
-                // Replace with your navigation logic
-                console.log('Navigate to hub/portfolio');
-              }}
+              onClick={() => router.push('/hub')}
             >
               INVESTIGATE CASE →
             </button>
